@@ -40,7 +40,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     0 => {
       self.enter_state(0)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan1()
@@ -57,27 +57,27 @@ pub fn Parser::parse(self : Self) -> Expr? {
     1 => {
       self.enter_state(1)
       continue match lexeme.token {
-          Add => { // shift
+          ADD => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             20
           }
-          Sub => { // shift
+          SUB => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             21
           }
-          Mul => { // shift
+          MUL => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             22
           }
-          Div => { // shift
+          DIV => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             23
           }
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             24
@@ -118,7 +118,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Pow => { // reduce
+          POW => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
@@ -141,7 +141,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Div => { // reduce
+          DIV => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
@@ -164,7 +164,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Mul => { // reduce
+          MUL => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
@@ -187,7 +187,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
@@ -210,7 +210,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
@@ -239,7 +239,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     3 => {
       self.enter_state(3)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan2()
@@ -261,27 +261,27 @@ pub fn Parser::parse(self : Self) -> Expr? {
             lexeme = self.lexer.scan1()
             19
           }
-          Add => { // shift
+          ADD => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             9
           }
-          Sub => { // shift
+          SUB => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             10
           }
-          Mul => { // shift
+          MUL => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             11
           }
-          Div => { // shift
+          DIV => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             12
           }
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             13
@@ -315,7 +315,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Pow => { // reduce
+          POW => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
@@ -338,7 +338,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Div => { // reduce
+          DIV => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
@@ -361,7 +361,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Mul => { // reduce
+          MUL => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
@@ -384,7 +384,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
@@ -407,7 +407,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
@@ -436,7 +436,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     6 => {
       self.enter_state(6)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan2()
@@ -458,27 +458,27 @@ pub fn Parser::parse(self : Self) -> Expr? {
             lexeme = self.lexer.scan2()
             8
           }
-          Add => { // shift
+          ADD => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             9
           }
-          Sub => { // shift
+          SUB => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             10
           }
-          Mul => { // shift
+          MUL => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             11
           }
-          Div => { // shift
+          DIV => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             12
           }
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             13
@@ -516,7 +516,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Pow => { // reduce
+          POW => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
@@ -543,7 +543,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Div => { // reduce
+          DIV => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
@@ -570,7 +570,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Mul => { // reduce
+          MUL => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
@@ -597,7 +597,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
@@ -624,7 +624,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
@@ -657,7 +657,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     9 => {
       self.enter_state(9)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan2()
@@ -674,7 +674,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     10 => {
       self.enter_state(10)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan2()
@@ -691,7 +691,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     11 => {
       self.enter_state(11)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan2()
@@ -708,7 +708,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     12 => {
       self.enter_state(12)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan2()
@@ -725,7 +725,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     13 => {
       self.enter_state(13)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan2()
@@ -742,7 +742,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     14 => {
       self.enter_state(14)
       continue match lexeme.token {
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             13
@@ -752,7 +752,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Pow]
+            // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Pow(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -774,12 +774,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Div => { // reduce
+          DIV => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Pow]
+            // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Pow(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -801,12 +801,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Mul => { // reduce
+          MUL => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Pow]
+            // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Pow(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -828,12 +828,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Pow]
+            // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Pow(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -855,12 +855,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Pow]
+            // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Pow(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -888,7 +888,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     15 => {
       self.enter_state(15)
       continue match lexeme.token {
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             13
@@ -898,7 +898,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Div]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -920,12 +920,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Div => { // reduce
+          DIV => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Div]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -947,12 +947,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Mul => { // reduce
+          MUL => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Div]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -974,12 +974,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Div]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1001,12 +1001,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Div]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1034,7 +1034,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     16 => {
       self.enter_state(16)
       continue match lexeme.token {
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             13
@@ -1044,7 +1044,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Mul]
+            // ignore Node [x1 : MUL]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Mul(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1066,12 +1066,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Div => { // reduce
+          DIV => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Mul]
+            // ignore Node [x1 : MUL]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Mul(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1093,12 +1093,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Mul => { // reduce
+          MUL => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Mul]
+            // ignore Node [x1 : MUL]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Mul(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1120,12 +1120,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Mul]
+            // ignore Node [x1 : MUL]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Mul(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1147,12 +1147,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Mul]
+            // ignore Node [x1 : MUL]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Mul(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1180,17 +1180,17 @@ pub fn Parser::parse(self : Self) -> Expr? {
     17 => {
       self.enter_state(17)
       continue match lexeme.token {
-          Mul => { // shift
+          MUL => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             11
           }
-          Div => { // shift
+          DIV => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             12
           }
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             13
@@ -1200,7 +1200,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Sub]
+            // ignore Node [x1 : SUB]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Sub(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1222,12 +1222,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Sub]
+            // ignore Node [x1 : SUB]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Sub(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1249,12 +1249,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Sub]
+            // ignore Node [x1 : SUB]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Sub(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1282,17 +1282,17 @@ pub fn Parser::parse(self : Self) -> Expr? {
     18 => {
       self.enter_state(18)
       continue match lexeme.token {
-          Mul => { // shift
+          MUL => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             11
           }
-          Div => { // shift
+          DIV => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             12
           }
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             13
@@ -1302,7 +1302,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Add]
+            // ignore Node [x1 : ADD]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Add(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1324,12 +1324,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Add]
+            // ignore Node [x1 : ADD]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Add(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1351,12 +1351,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Add]
+            // ignore Node [x1 : ADD]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Add(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1411,7 +1411,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Pow => { // reduce
+          POW => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
@@ -1438,7 +1438,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Div => { // reduce
+          DIV => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
@@ -1465,7 +1465,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Mul => { // reduce
+          MUL => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
@@ -1492,7 +1492,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
@@ -1519,7 +1519,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
@@ -1552,7 +1552,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     20 => {
       self.enter_state(20)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan1()
@@ -1569,7 +1569,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     21 => {
       self.enter_state(21)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan1()
@@ -1586,7 +1586,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     22 => {
       self.enter_state(22)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan1()
@@ -1603,7 +1603,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     23 => {
       self.enter_state(23)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan1()
@@ -1620,7 +1620,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     24 => {
       self.enter_state(24)
       continue match lexeme.token {
-          Lit => { // shift
+          LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
             lexeme = self.lexer.scan1()
@@ -1637,7 +1637,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     25 => {
       self.enter_state(25)
       continue match lexeme.token {
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             24
@@ -1647,7 +1647,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Pow]
+            // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Pow(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1669,12 +1669,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Div => { // reduce
+          DIV => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Pow]
+            // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Pow(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1696,12 +1696,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Mul => { // reduce
+          MUL => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Pow]
+            // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Pow(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1723,12 +1723,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Pow]
+            // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Pow(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1750,12 +1750,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Pow]
+            // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Pow(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1783,7 +1783,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     26 => {
       self.enter_state(26)
       continue match lexeme.token {
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             24
@@ -1793,7 +1793,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Div]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1815,12 +1815,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Div => { // reduce
+          DIV => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Div]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1842,12 +1842,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Mul => { // reduce
+          MUL => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Div]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1869,12 +1869,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Div]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1896,12 +1896,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Div]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1929,7 +1929,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
     27 => {
       self.enter_state(27)
       continue match lexeme.token {
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             24
@@ -1939,7 +1939,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Mul]
+            // ignore Node [x1 : MUL]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Mul(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1961,12 +1961,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Div => { // reduce
+          DIV => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Mul]
+            // ignore Node [x1 : MUL]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Mul(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -1988,12 +1988,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Mul => { // reduce
+          MUL => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Mul]
+            // ignore Node [x1 : MUL]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Mul(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -2015,12 +2015,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Mul]
+            // ignore Node [x1 : MUL]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Mul(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -2042,12 +2042,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Mul]
+            // ignore Node [x1 : MUL]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Mul(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -2075,17 +2075,17 @@ pub fn Parser::parse(self : Self) -> Expr? {
     28 => {
       self.enter_state(28)
       continue match lexeme.token {
-          Mul => { // shift
+          MUL => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             22
           }
-          Div => { // shift
+          DIV => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             23
           }
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             24
@@ -2095,7 +2095,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Sub]
+            // ignore Node [x1 : SUB]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Sub(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -2117,12 +2117,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Sub]
+            // ignore Node [x1 : SUB]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Sub(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -2144,12 +2144,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Sub]
+            // ignore Node [x1 : SUB]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Sub(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -2177,17 +2177,17 @@ pub fn Parser::parse(self : Self) -> Expr? {
     29 => {
       self.enter_state(29)
       continue match lexeme.token {
-          Mul => { // shift
+          MUL => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             22
           }
-          Div => { // shift
+          DIV => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             23
           }
-          Pow => { // shift
+          POW => { // shift
             // ignore the old lexeme
             lexeme = self.lexer.scan0()
             24
@@ -2197,7 +2197,7 @@ pub fn Parser::parse(self : Self) -> Expr? {
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Add]
+            // ignore Node [x1 : ADD]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Add(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -2219,12 +2219,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Sub => { // reduce
+          SUB => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Add]
+            // ignore Node [x1 : ADD]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Add(x0, x2) |> Node::Expr
             self.node_stack.push(node)
@@ -2246,12 +2246,12 @@ pub fn Parser::parse(self : Self) -> Expr? {
               _ => break
             }
           }
-          Add => { // reduce
+          ADD => { // reduce
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : Add]
+            // ignore Node [x1 : ADD]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = Expr::Add(x0, x2) |> Node::Expr
             self.node_stack.push(node)

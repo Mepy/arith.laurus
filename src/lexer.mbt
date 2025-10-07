@@ -2,12 +2,12 @@
 pub enum TOKEN {
   LAURUS_EOF
   LAURUS_SPACE
-  Lit
-  Add
-  Sub
-  Mul
-  Div
-  Pow
+  LIT
+  ADD
+  SUB
+  MUL
+  DIV
+  POW
   LParen
   RParen
 } derive(Show)
@@ -98,7 +98,7 @@ pub fn Lexer::skip_space(self : Self) -> Lexeme {
 
 ///|
 pub fn Lexer::scan0(self : Self) -> Lexeme {
-  // [Lit, LParen]
+  // [LIT, LParen]
   self.skip_space() |> ignore
   loop 0 {
     0 =>
@@ -114,7 +114,7 @@ pub fn Lexer::scan0(self : Self) -> Lexeme {
     }
     2 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Lit
+      self.lexeme.token = LIT
       continue match self.next() {
           '0'..='9' => 2
           _ => break
@@ -130,7 +130,7 @@ pub fn Lexer::scan0(self : Self) -> Lexeme {
 
 ///|
 pub fn Lexer::scan1(self : Self) -> Lexeme {
-  // [LAURUS_EOF, Add, Sub, Mul, Div, Pow]
+  // [LAURUS_EOF, ADD, SUB, MUL, DIV, POW]
   self.skip_space() |> ignore
   loop 0 {
     0 => {
@@ -147,27 +147,27 @@ pub fn Lexer::scan1(self : Self) -> Lexeme {
     }
     1 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Mul
+      self.lexeme.token = MUL
       break
     }
     2 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Add
+      self.lexeme.token = ADD
       break
     }
     3 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Sub
+      self.lexeme.token = SUB
       break
     }
     4 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Div
+      self.lexeme.token = DIV
       break
     }
     5 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Pow
+      self.lexeme.token = POW
       break
     }
     _ => break
@@ -180,7 +180,7 @@ pub fn Lexer::scan1(self : Self) -> Lexeme {
 
 ///|
 pub fn Lexer::scan2(self : Self) -> Lexeme {
-  // [Add, Sub, Mul, Div, Pow, RParen]
+  // [ADD, SUB, MUL, DIV, POW, RParen]
   self.skip_space() |> ignore
   loop 0 {
     0 =>
@@ -200,27 +200,27 @@ pub fn Lexer::scan2(self : Self) -> Lexeme {
     }
     2 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Mul
+      self.lexeme.token = MUL
       break
     }
     3 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Add
+      self.lexeme.token = ADD
       break
     }
     4 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Sub
+      self.lexeme.token = SUB
       break
     }
     5 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Div
+      self.lexeme.token = DIV
       break
     }
     6 => {
       self.lexeme.end = self.cur
-      self.lexeme.token = Pow
+      self.lexeme.token = POW
       break
     }
     _ => break
