@@ -1,0 +1,13 @@
+{
+  "name": "arith.laurus",
+  "version": "0.1.0",
+  "bin-deps": {
+    "Mepy/Laurus": "0.1.0"
+  },
+  "readme": "README.mbt.md",
+  "repository": "",
+  "license": "MIT",
+  "keywords": [],
+  "description": "",
+  "source": "src"
+}
