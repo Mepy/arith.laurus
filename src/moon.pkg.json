@@ -2,7 +2,7 @@
 	"pre-build": [
 		{
 			"command": "$mod_dir/.mooncakes/Mepy/Laurus/main $input",
-			"input": "./arith.laurus",
+			"input": "arith.laurus",
 			"output": ""
 		}
 	],
