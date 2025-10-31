@@ -2,7 +2,7 @@
   "name": "arith",
   "version": "0.1.0",
   "bin-deps": {
-    "Mepy/Laurus": "0.1.0"
+    "Mepy/Laurus": "0.2.0"
   },
   "readme": "README.mbt.md",
   "repository": "",

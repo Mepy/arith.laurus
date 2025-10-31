@@ -1,7 +1,30 @@
 ///|
+pub struct Span {
+  beg : Location
+  end : Location
+  children : FixedArray[Span]
+} derive(Show)
+
+///|
+#inline
+fn Span::leaf(beg : Location, end : Location) -> Span {
+  { beg, end, children: FixedArray::default() }
+}
+
+///|
+fn Span::tree(children : FixedArray[Span]) -> Span {
+  let len = children.length()
+  // guard len != 0
+  let beg = children[0].beg
+  let end = children[len - 1].end
+  { beg, end, children }
+}
+
+///|
 struct Parser {
   lexer : Lexer
   state_stack : Array[Int]
+  span_stack : Array[Span]
   node_stack : Array[Node]
 } derive(Show)
 
@@ -10,15 +33,27 @@ pub fn Parser::new(src? : String = "") -> Self {
   {
     lexer: Lexer::new(src~),
     state_stack: Array::new(),
+    span_stack: Array::new(),
     node_stack: Array::new(),
   }
 }
 
 ///|
-pub fn Parser::init(self : Self, src : String, cur? : Int = 0) -> Unit {
+pub fn Parser::init(
+  self : Self,
+  src : String,
+  cur? : Location = Location::default(),
+) -> Unit {
   self.lexer.init(src, cur~)
   self.state_stack.clear()
   self.node_stack.clear()
+}
+
+///|
+#inline
+fn Parser::shift_span(self : Self, lexeme : Lexeme) -> Unit {
+  // no need to clone lexeme.beg/end because it is to be consumed.
+  self.span_stack.push(Span::leaf(lexeme.beg, lexeme.end))
 }
 
 ///|
@@ -34,7 +69,7 @@ enum Node {
 } derive(Show)
 
 ///|
-pub fn Parser::parse(self : Self) -> Expr? {
+pub fn Parser::parse(self : Self) -> Expr raise LexerError {
   let mut lexeme = self.lexer.scan0()
   loop 0 {
     0 => {
@@ -43,11 +78,13 @@ pub fn Parser::parse(self : Self) -> Expr? {
           LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan1()
             2
           }
           LParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             3
           }
@@ -59,31 +96,41 @@ pub fn Parser::parse(self : Self) -> Expr? {
       continue match lexeme.token {
           ADD => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            20
+            28
           }
           SUB => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            21
+            29
           }
           MUL => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            22
+            30
           }
           DIV => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            23
+            31
           }
           POW => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            24
+            32
           }
           LAURUS_EOF => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 1:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
             let node = x0 |> Node::Expr
             self.node_stack.push(node)
@@ -95,8 +142,13 @@ pub fn Parser::parse(self : Self) -> Expr? {
     2 => {
       self.enter_state(2)
       continue match lexeme.token {
-          LAURUS_EOF => { // reduce
+          LAURUS_EOF | POW | DIV | MUL | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 1:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
             self.node_stack.push(node)
@@ -105,131 +157,24 @@ pub fn Parser::parse(self : Self) -> Expr? {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          POW => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Int(x0)
-            let node = Expr::Lit(x0) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          DIV => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Int(x0)
-            let node = Expr::Lit(x0) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          MUL => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Int(x0)
-            let node = Expr::Lit(x0) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Int(x0)
-            let node = Expr::Lit(x0) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Int(x0)
-            let node = Expr::Lit(x0) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
@@ -242,11 +187,13 @@ pub fn Parser::parse(self : Self) -> Expr? {
           LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan2()
             5
           }
           LParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             6
           }
@@ -258,31 +205,37 @@ pub fn Parser::parse(self : Self) -> Expr? {
       continue match lexeme.token {
           RParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan1()
-            19
+            27
           }
           ADD => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             9
           }
           SUB => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             10
           }
           MUL => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             11
           }
           DIV => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             12
           }
           POW => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             13
           }
@@ -292,8 +245,13 @@ pub fn Parser::parse(self : Self) -> Expr? {
     5 => {
       self.enter_state(5)
       continue match lexeme.token {
-          RParen => { // reduce
+          RParen | POW | DIV | MUL | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 1:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
             guard self.node_stack.unsafe_pop() is Node::Int(x0)
             let node = Expr::Lit(x0) |> Node::Expr
             self.node_stack.push(node)
@@ -302,131 +260,24 @@ pub fn Parser::parse(self : Self) -> Expr? {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          POW => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Int(x0)
-            let node = Expr::Lit(x0) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          DIV => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Int(x0)
-            let node = Expr::Lit(x0) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          MUL => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Int(x0)
-            let node = Expr::Lit(x0) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Int(x0)
-            let node = Expr::Lit(x0) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Int(x0)
-            let node = Expr::Lit(x0) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
@@ -439,11 +290,13 @@ pub fn Parser::parse(self : Self) -> Expr? {
           LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan2()
             5
           }
           LParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             6
           }
@@ -455,31 +308,37 @@ pub fn Parser::parse(self : Self) -> Expr? {
       continue match lexeme.token {
           RParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan2()
             8
           }
           ADD => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             9
           }
           SUB => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             10
           }
           MUL => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             11
           }
           DIV => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             12
           }
           POW => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             13
           }
@@ -489,10 +348,17 @@ pub fn Parser::parse(self : Self) -> Expr? {
     8 => {
       self.enter_state(8)
       continue match lexeme.token {
-          RParen => { // reduce
+          RParen | POW | DIV | MUL | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
             // ignore Node [x2 : RParen]
             guard self.node_stack.unsafe_pop() is Node::Expr(x1)
             // ignore Node [x0 : LParen]
@@ -503,151 +369,24 @@ pub fn Parser::parse(self : Self) -> Expr? {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          POW => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          DIV => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          MUL => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
@@ -660,11 +399,13 @@ pub fn Parser::parse(self : Self) -> Expr? {
           LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan2()
             5
           }
           LParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             6
           }
@@ -677,11 +418,13 @@ pub fn Parser::parse(self : Self) -> Expr? {
           LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan2()
             5
           }
           LParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             6
           }
@@ -694,11 +437,13 @@ pub fn Parser::parse(self : Self) -> Expr? {
           LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan2()
             5
           }
           LParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             6
           }
@@ -711,11 +456,13 @@ pub fn Parser::parse(self : Self) -> Expr? {
           LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan2()
             5
           }
           LParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             6
           }
@@ -728,11 +475,13 @@ pub fn Parser::parse(self : Self) -> Expr? {
           LIT => { // shift
             let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan2()
             5
           }
           LParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             6
           }
@@ -744,13 +493,21 @@ pub fn Parser::parse(self : Self) -> Expr? {
       continue match lexeme.token {
           POW => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
             13
           }
-          RParen => { // reduce
+          RParen | DIV | MUL | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
             // ignore Node [x1 : POW]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
@@ -761,124 +518,24 @@ pub fn Parser::parse(self : Self) -> Expr? {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          DIV => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : POW]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Pow(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          MUL => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : POW]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Pow(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : POW]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Pow(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : POW]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Pow(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
@@ -888,145 +545,18 @@ pub fn Parser::parse(self : Self) -> Expr? {
     15 => {
       self.enter_state(15)
       continue match lexeme.token {
-          POW => { // shift
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
+            self.node_stack.push(node)
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan2()
+            5
+          }
+          LParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            13
-          }
-          RParen => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : DIV]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Div(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          DIV => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : DIV]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Div(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          MUL => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : DIV]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Div(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : DIV]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Div(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : DIV]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Div(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+            6
           }
           _ => break
         }
@@ -1034,145 +564,18 @@ pub fn Parser::parse(self : Self) -> Expr? {
     16 => {
       self.enter_state(16)
       continue match lexeme.token {
-          POW => { // shift
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
+            self.node_stack.push(node)
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan2()
+            5
+          }
+          LParen => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            13
-          }
-          RParen => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : MUL]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Mul(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          DIV => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : MUL]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Mul(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          MUL => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : MUL]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Mul(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : MUL]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Mul(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : MUL]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Mul(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+            6
           }
           _ => break
         }
@@ -1180,101 +583,18 @@ pub fn Parser::parse(self : Self) -> Expr? {
     17 => {
       self.enter_state(17)
       continue match lexeme.token {
-          MUL => { // shift
-            // ignore the old lexeme
-            lexeme = self.lexer.scan0()
-            11
-          }
-          DIV => { // shift
-            // ignore the old lexeme
-            lexeme = self.lexer.scan0()
-            12
-          }
-          POW => { // shift
-            // ignore the old lexeme
-            lexeme = self.lexer.scan0()
-            13
-          }
-          RParen => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : SUB]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Sub(x0, x2) |> Node::Expr
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan2()
+            5
           }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : SUB]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Sub(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : SUB]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Sub(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            6
           }
           _ => break
         }
@@ -1282,101 +602,18 @@ pub fn Parser::parse(self : Self) -> Expr? {
     18 => {
       self.enter_state(18)
       continue match lexeme.token {
-          MUL => { // shift
-            // ignore the old lexeme
-            lexeme = self.lexer.scan0()
-            11
-          }
-          DIV => { // shift
-            // ignore the old lexeme
-            lexeme = self.lexer.scan0()
-            12
-          }
-          POW => { // shift
-            // ignore the old lexeme
-            lexeme = self.lexer.scan0()
-            13
-          }
-          RParen => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : ADD]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Add(x0, x2) |> Node::Expr
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan2()
+            5
           }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : ADD]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Add(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : ADD]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Add(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            6
           }
           _ => break
         }
@@ -1384,165 +621,69 @@ pub fn Parser::parse(self : Self) -> Expr? {
     19 => {
       self.enter_state(19)
       continue match lexeme.token {
-          LAURUS_EOF => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+          ADD => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            9
           }
-          POW => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+          MUL => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            11
           }
-          DIV => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+          DIV => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            12
           }
-          MUL => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            13
           }
-          SUB => { // reduce
+          SUB | RParen => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : ADD]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Add(x0, x2) |> Node::Expr
             self.node_stack.push(node)
             let former = self.state_stack[self.state_stack.length() - 1]
             match former {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            // ignore Node [x2 : RParen]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
-            // ignore Node [x0 : LParen]
-            let node = x1 |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
@@ -1552,16 +693,59 @@ pub fn Parser::parse(self : Self) -> Expr? {
     20 => {
       self.enter_state(20)
       continue match lexeme.token {
-          LIT => { // shift
-            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
-            self.node_stack.push(node)
-            lexeme = self.lexer.scan1()
-            2
-          }
-          LParen => { // shift
+          DIV => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            3
+            12
+          }
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            13
+          }
+          ADD | MUL | SUB | RParen => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : DIV]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Div(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
           }
           _ => break
         }
@@ -1569,16 +753,59 @@ pub fn Parser::parse(self : Self) -> Expr? {
     21 => {
       self.enter_state(21)
       continue match lexeme.token {
-          LIT => { // shift
-            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
-            self.node_stack.push(node)
-            lexeme = self.lexer.scan1()
-            2
-          }
-          LParen => { // shift
+          MUL => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            3
+            11
+          }
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            13
+          }
+          ADD | DIV | SUB | RParen => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : MUL]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Mul(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
           }
           _ => break
         }
@@ -1586,16 +813,71 @@ pub fn Parser::parse(self : Self) -> Expr? {
     22 => {
       self.enter_state(22)
       continue match lexeme.token {
-          LIT => { // shift
-            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
-            self.node_stack.push(node)
-            lexeme = self.lexer.scan1()
-            2
-          }
-          LParen => { // shift
+          SUB => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            3
+            10
+          }
+          MUL => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            11
+          }
+          DIV => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            12
+          }
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            13
+          }
+          ADD | RParen => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : SUB]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Sub(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
           }
           _ => break
         }
@@ -1603,16 +885,53 @@ pub fn Parser::parse(self : Self) -> Expr? {
     23 => {
       self.enter_state(23)
       continue match lexeme.token {
-          LIT => { // shift
-            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
-            self.node_stack.push(node)
-            lexeme = self.lexer.scan1()
-            2
-          }
-          LParen => { // shift
+          POW => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            3
+            13
+          }
+          RParen | DIV | MUL | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : DIV]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Div(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
           }
           _ => break
         }
@@ -1620,16 +939,53 @@ pub fn Parser::parse(self : Self) -> Expr? {
     24 => {
       self.enter_state(24)
       continue match lexeme.token {
-          LIT => { // shift
-            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
-            self.node_stack.push(node)
-            lexeme = self.lexer.scan1()
-            2
-          }
-          LParen => { // shift
+          POW => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            3
+            13
+          }
+          RParen | DIV | MUL | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : MUL]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Mul(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
           }
           _ => break
         }
@@ -1637,143 +993,63 @@ pub fn Parser::parse(self : Self) -> Expr? {
     25 => {
       self.enter_state(25)
       continue match lexeme.token {
+          MUL => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            11
+          }
+          DIV => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            12
+          }
           POW => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            24
+            13
           }
-          LAURUS_EOF => { // reduce
+          RParen | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : POW]
+            // ignore Node [x1 : SUB]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Pow(x0, x2) |> Node::Expr
+            let node = Expr::Sub(x0, x2) |> Node::Expr
             self.node_stack.push(node)
             let former = self.state_stack[self.state_stack.length() - 1]
             match former {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          DIV => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : POW]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Pow(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          MUL => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : POW]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Pow(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : POW]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Pow(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : POW]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Pow(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
@@ -1783,143 +1059,63 @@ pub fn Parser::parse(self : Self) -> Expr? {
     26 => {
       self.enter_state(26)
       continue match lexeme.token {
+          MUL => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            11
+          }
+          DIV => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            12
+          }
           POW => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            24
+            13
           }
-          LAURUS_EOF => { // reduce
+          RParen | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : DIV]
+            // ignore Node [x1 : ADD]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Div(x0, x2) |> Node::Expr
+            let node = Expr::Add(x0, x2) |> Node::Expr
             self.node_stack.push(node)
             let former = self.state_stack[self.state_stack.length() - 1]
             match former {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          DIV => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : DIV]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Div(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          MUL => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : DIV]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Div(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : DIV]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Div(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : DIV]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Div(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
@@ -1929,143 +1125,45 @@ pub fn Parser::parse(self : Self) -> Expr? {
     27 => {
       self.enter_state(27)
       continue match lexeme.token {
-          POW => { // shift
-            // ignore the old lexeme
-            lexeme = self.lexer.scan0()
-            24
-          }
-          LAURUS_EOF => { // reduce
+          LAURUS_EOF | POW | DIV | MUL | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : MUL]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Mul(x0, x2) |> Node::Expr
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            // ignore Node [x2 : RParen]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x1)
+            // ignore Node [x0 : LParen]
+            let node = x1 |> Node::Expr
             self.node_stack.push(node)
             let former = self.state_stack[self.state_stack.length() - 1]
             match former {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          DIV => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : MUL]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Mul(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          MUL => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : MUL]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Mul(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : MUL]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Mul(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : MUL]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Mul(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
@@ -2075,101 +1173,18 @@ pub fn Parser::parse(self : Self) -> Expr? {
     28 => {
       self.enter_state(28)
       continue match lexeme.token {
-          MUL => { // shift
-            // ignore the old lexeme
-            lexeme = self.lexer.scan0()
-            22
-          }
-          DIV => { // shift
-            // ignore the old lexeme
-            lexeme = self.lexer.scan0()
-            23
-          }
-          POW => { // shift
-            // ignore the old lexeme
-            lexeme = self.lexer.scan0()
-            24
-          }
-          LAURUS_EOF => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : SUB]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Sub(x0, x2) |> Node::Expr
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
             self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan1()
+            2
           }
-          SUB => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : SUB]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Sub(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
-          }
-          ADD => { // reduce
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            self.state_stack.unsafe_pop() |> ignore
-            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : SUB]
-            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Sub(x0, x2) |> Node::Expr
-            self.node_stack.push(node)
-            let former = self.state_stack[self.state_stack.length() - 1]
-            match former {
-              0 => 1
-              3 => 4
-              6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
-              13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
-              _ => break
-            }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            3
           }
           _ => break
         }
@@ -2177,25 +1192,247 @@ pub fn Parser::parse(self : Self) -> Expr? {
     29 => {
       self.enter_state(29)
       continue match lexeme.token {
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
+            self.node_stack.push(node)
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan1()
+            2
+          }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            3
+          }
+          _ => break
+        }
+    }
+    30 => {
+      self.enter_state(30)
+      continue match lexeme.token {
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
+            self.node_stack.push(node)
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan1()
+            2
+          }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            3
+          }
+          _ => break
+        }
+    }
+    31 => {
+      self.enter_state(31)
+      continue match lexeme.token {
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
+            self.node_stack.push(node)
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan1()
+            2
+          }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            3
+          }
+          _ => break
+        }
+    }
+    32 => {
+      self.enter_state(32)
+      continue match lexeme.token {
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
+            self.node_stack.push(node)
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan1()
+            2
+          }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            3
+          }
+          _ => break
+        }
+    }
+    33 => {
+      self.enter_state(33)
+      continue match lexeme.token {
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            32
+          }
+          LAURUS_EOF | DIV | MUL | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : POW]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Pow(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
+          }
+          _ => break
+        }
+    }
+    34 => {
+      self.enter_state(34)
+      continue match lexeme.token {
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
+            self.node_stack.push(node)
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan1()
+            2
+          }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            3
+          }
+          _ => break
+        }
+    }
+    35 => {
+      self.enter_state(35)
+      continue match lexeme.token {
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
+            self.node_stack.push(node)
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan1()
+            2
+          }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            3
+          }
+          _ => break
+        }
+    }
+    36 => {
+      self.enter_state(36)
+      continue match lexeme.token {
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
+            self.node_stack.push(node)
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan1()
+            2
+          }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            3
+          }
+          _ => break
+        }
+    }
+    37 => {
+      self.enter_state(37)
+      continue match lexeme.token {
+          LIT => { // shift
+            let node = self.lexer.get(lexeme) |> Int::from_str |> Node::Int
+            self.node_stack.push(node)
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan1()
+            2
+          }
+          LParen => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            3
+          }
+          _ => break
+        }
+    }
+    38 => {
+      self.enter_state(38)
+      continue match lexeme.token {
+          ADD => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            28
+          }
           MUL => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            22
+            30
           }
           DIV => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            23
+            31
           }
           POW => { // shift
             // ignore the old lexeme
+            self.shift_span(lexeme)
             lexeme = self.lexer.scan0()
-            24
+            32
           }
-          LAURUS_EOF => { // reduce
+          SUB | LAURUS_EOF => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
             // ignore Node [x1 : ADD]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
@@ -2206,50 +1443,428 @@ pub fn Parser::parse(self : Self) -> Expr? {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
-          SUB => { // reduce
+          _ => break
+        }
+    }
+    39 => {
+      self.enter_state(39)
+      continue match lexeme.token {
+          DIV => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            31
+          }
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            32
+          }
+          ADD | MUL | SUB | LAURUS_EOF => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
-            // ignore Node [x1 : ADD]
+            // ignore Node [x1 : DIV]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
-            let node = Expr::Add(x0, x2) |> Node::Expr
+            let node = Expr::Div(x0, x2) |> Node::Expr
             self.node_stack.push(node)
             let former = self.state_stack[self.state_stack.length() - 1]
             match former {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
-          ADD => { // reduce
+          _ => break
+        }
+    }
+    40 => {
+      self.enter_state(40)
+      continue match lexeme.token {
+          MUL => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            30
+          }
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            32
+          }
+          ADD | DIV | SUB | LAURUS_EOF => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
             self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : MUL]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Mul(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
+          }
+          _ => break
+        }
+    }
+    41 => {
+      self.enter_state(41)
+      continue match lexeme.token {
+          SUB => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            29
+          }
+          MUL => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            30
+          }
+          DIV => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            31
+          }
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            32
+          }
+          ADD | LAURUS_EOF => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : SUB]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Sub(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
+          }
+          _ => break
+        }
+    }
+    42 => {
+      self.enter_state(42)
+      continue match lexeme.token {
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            32
+          }
+          LAURUS_EOF | DIV | MUL | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : DIV]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Div(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
+          }
+          _ => break
+        }
+    }
+    43 => {
+      self.enter_state(43)
+      continue match lexeme.token {
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            32
+          }
+          LAURUS_EOF | DIV | MUL | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : MUL]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Mul(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
+          }
+          _ => break
+        }
+    }
+    44 => {
+      self.enter_state(44)
+      continue match lexeme.token {
+          MUL => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            30
+          }
+          DIV => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            31
+          }
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            32
+          }
+          LAURUS_EOF | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
+            guard self.node_stack.unsafe_pop() is Node::Expr(x2)
+            // ignore Node [x1 : SUB]
+            guard self.node_stack.unsafe_pop() is Node::Expr(x0)
+            let node = Expr::Sub(x0, x2) |> Node::Expr
+            self.node_stack.push(node)
+            let former = self.state_stack[self.state_stack.length() - 1]
+            match former {
+              0 => 1
+              3 => 4
+              6 => 7
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
+              13 => 14
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
+              _ => break
+            }
+          }
+          _ => break
+        }
+    }
+    45 => {
+      self.enter_state(45)
+      continue match lexeme.token {
+          MUL => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            30
+          }
+          DIV => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            31
+          }
+          POW => { // shift
+            // ignore the old lexeme
+            self.shift_span(lexeme)
+            lexeme = self.lexer.scan0()
+            32
+          }
+          LAURUS_EOF | SUB | ADD => { // reduce
+            let span = self.span_stack[self.span_stack.length() - 3:].iter()
+              |> FixedArray::from_iter
+              |> Span::tree
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.state_stack.unsafe_pop() |> ignore
+            self.span_stack.unsafe_pop() |> ignore
+            self.span_stack.push(span)
             guard self.node_stack.unsafe_pop() is Node::Expr(x2)
             // ignore Node [x1 : ADD]
             guard self.node_stack.unsafe_pop() is Node::Expr(x0)
@@ -2260,16 +1875,24 @@ pub fn Parser::parse(self : Self) -> Expr? {
               0 => 1
               3 => 4
               6 => 7
-              9 => 18
-              10 => 17
-              11 => 16
-              12 => 15
+              9 => 26
+              10 => 25
+              11 => 24
+              12 => 23
               13 => 14
-              20 => 29
-              21 => 28
-              22 => 27
-              23 => 26
-              24 => 25
+              15 => 22
+              16 => 21
+              17 => 20
+              18 => 19
+              28 => 45
+              29 => 44
+              30 => 43
+              31 => 42
+              32 => 33
+              34 => 41
+              35 => 40
+              36 => 39
+              37 => 38
               _ => break
             }
           }
@@ -2278,8 +1901,6 @@ pub fn Parser::parse(self : Self) -> Expr? {
     }
     _ => break
   }
-  match self.node_stack[0] {
-    Expr(node) => Some(node)
-    _ => None
-  }
+  guard self.node_stack[0] is Expr(node)
+  node
 }
